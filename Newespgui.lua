@@ -1,35 +1,33 @@
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
+-- Load Rayfield UI Library
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Config
-local refreshTime = 1 -- seconds
-local espData = {} -- store player highlights
-local friendESP = true -- default friends toggle
+-- Create Main Window
+local Window = Rayfield:CreateWindow({
+    Name = "Enhanced ESP",
+    LoadingTitle = "Loading ESP...",
+    LoadingSubtitle = "by YourName",
+    Theme = "Default",
+    KeySystem = true,
+    KeySettings = {
+        Title = "ESP Key",
+        Subtitle = "Enter key to continue",
+        Note = "Type '1' to proceed",
+        FileName = "ESPKey",
+        Key = {"1"}
+    }
+})
 
--- GUI Setup
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ESP_GUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+-- Create Tab for ESP Settings
+local Tab = Window:CreateTab("ESP Settings", 4483362458)
 
--- Simple toggle button
-local toggleButton = Instance.new("TextButton")
-toggleButton.Size = UDim2.new(0, 150, 0, 50)
-toggleButton.Position = UDim2.new(0, 20, 0, 20)
-toggleButton.Text = "Toggle Friends ESP"
-toggleButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
-toggleButton.TextColor3 = Color3.fromRGB(255,255,255)
-toggleButton.Parent = screenGui
+-- Variables to store ESP settings
+local espData = {}
+local friendESP = true
+local playerColors = {}
 
-toggleButton.MouseButton1Click:Connect(function()
-    friendESP = not friendESP
-end)
-
--- Function to create or update ESP
-local function applyESP(player)
-    if player == LocalPlayer then return end
+-- Function to create or update ESP for a player
+local function createESP(player)
+    if player == game.Players.LocalPlayer then return end
     local character = player.Character
     if character then
         local hrp = character:FindFirstChild("HumanoidRootPart")
@@ -37,8 +35,8 @@ local function applyESP(player)
             if not espData[player] then
                 local highlight = Instance.new("Highlight")
                 highlight.Adornee = character
-                highlight.FillColor = Color3.fromRGB(0,255,0)
-                highlight.OutlineColor = Color3.fromRGB(0,255,0)
+                highlight.FillColor = playerColors[player] or Color3.fromRGB(255, 0, 0)
+                highlight.OutlineColor = playerColors[player] or Color3.fromRGB(255, 0, 0)
                 highlight.Parent = workspace
                 espData[player] = highlight
             end
@@ -46,24 +44,47 @@ local function applyESP(player)
     end
 end
 
--- Function to update colors dynamically
-local function updateColors()
+-- Function to update ESP colors based on settings
+local function updateESPColors()
     for player, highlight in pairs(espData) do
-        if friendESP and LocalPlayer:IsFriendsWith(player.UserId) then
-            highlight.FillColor = Color3.fromRGB(0,0,255) -- blue for friends
-            highlight.OutlineColor = Color3.fromRGB(0,0,255)
+        if friendESP and game.Players.LocalPlayer:IsFriendsWith(player.UserId) then
+            highlight.FillColor = Color3.fromRGB(0, 0, 255)
+            highlight.OutlineColor = Color3.fromRGB(0, 0, 255)
         else
-            highlight.FillColor = Color3.fromRGB(255,0,0) -- red for others
-            highlight.OutlineColor = Color3.fromRGB(255,0,0)
+            highlight.FillColor = playerColors[player] or Color3.fromRGB(255, 0, 0)
+            highlight.OutlineColor = playerColors[player] or Color3.fromRGB(255, 0, 0)
         end
     end
 end
 
--- Refresh loop every second
-while true do
-    for _, player in pairs(Players:GetPlayers()) do
-        applyESP(player)
+-- Create Toggle for Friend ESP
+Tab:CreateToggle({
+    Name = "Friend ESP",
+    CurrentValue = friendESP,
+    Flag = "friendESP",
+    Callback = function(value)
+        friendESP = value
+        updateESPColors()
     end
-    updateColors()
-    wait(refreshTime)
+})
+
+-- Create Color Picker for Player Colors
+Tab:CreateColorPicker({
+    Name = "Player Color",
+    Flag = "playerColor",
+    Callback = function(value)
+        local selectedPlayer = game.Players.LocalPlayer -- Replace with actual player selection logic
+        playerColors[selectedPlayer] = value
+        updateESPColors()
+    end
+})
+
+-- Function to apply ESP to all players
+for _, player in pairs(game.Players:GetPlayers()) do
+    createESP(player)
 end
+
+-- Update ESP colors periodically
+game:GetService("RunService").Heartbeat:Connect(function()
+    updateESPColors()
+end)
