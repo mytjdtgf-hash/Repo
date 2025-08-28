@@ -1,44 +1,54 @@
--- Load Rayfield UI
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
--- Create Main Window with Key System
-local Window = Rayfield:CreateWindow({
-    Name = "ESP + Godmode",
-    LoadingTitle = "Loading ESP...",
-    LoadingSubtitle = "by YourName",
-    Theme = "Default",
-    KeySystem = true,
-    KeySettings = {
-        Title = "ESP Key",
-        Subtitle = "Press MM to unlock",
-        Note = "Key is case sensitive",
-        FileName = "ESPKey",
-        Key = {"MM"}
-    }
-})
-
--- Create ESP Tab
-local ESPTab = Window:CreateTab("ESP Settings", 4483362458)
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
 -- Variables
 local espData = {}
 local espEnabled = true
 local friendESP = true
-local playerColors = {}
 local godmodeEnabled = false
 
--- ESP Functions
+-- Custom GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CustomESP_GUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 180)
+frame.Position = UDim2.new(0, 20, 0, 20)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.Parent = screenGui
+
+local function createButton(text, pos, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 200, 0, 30)
+    btn.Position = pos
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Parent = frame
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Buttons
+createButton("Toggle ESP", UDim2.new(0, 10, 0, 10), function() espEnabled = not espEnabled end)
+createButton("Toggle Friend ESP", UDim2.new(0, 10, 0, 50), function() friendESP = not friendESP end)
+createButton("Toggle Godmode", UDim2.new(0, 10, 0, 90), function() godmodeEnabled = not godmodeEnabled end)
+
+-- ESP Function
 local function createESP(player)
-    if player == game.Players.LocalPlayer then return end
-    local character = player.Character
-    if character then
-        local hrp = character:FindFirstChild("HumanoidRootPart")
+    if player == LocalPlayer then return end
+    local char = player.Character
+    if char then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
         if hrp and espEnabled then
             if not espData[player] then
                 local highlight = Instance.new("Highlight")
-                highlight.Adornee = character
-                highlight.FillColor = playerColors[player] or Color3.fromRGB(255,0,0)
-                highlight.OutlineColor = playerColors[player] or Color3.fromRGB(255,0,0)
+                highlight.Adornee = char
+                highlight.FillColor = friendESP and (LocalPlayer:IsFriendsWith(player.UserId) and Color3.fromRGB(0,0,255) or Color3.fromRGB(255,0,0)) or Color3.fromRGB(255,0,0)
+                highlight.OutlineColor = highlight.FillColor
                 highlight.Parent = workspace
                 espData[player] = highlight
             end
@@ -49,24 +59,10 @@ local function createESP(player)
     end
 end
 
-local function updateESPColors()
-    for player, highlight in pairs(espData) do
-        if friendESP and game.Players.LocalPlayer:IsFriendsWith(player.UserId) then
-            highlight.FillColor = Color3.fromRGB(0,0,255)
-            highlight.OutlineColor = Color3.fromRGB(0,0,255)
-        else
-            highlight.FillColor = playerColors[player] or Color3.fromRGB(255,0,0)
-            highlight.OutlineColor = playerColors[player] or Color3.fromRGB(255,0,0)
-        end
-    end
-end
-
--- Godmode Function
+-- Godmode
 local function enableGodmode()
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local humanoid = character:WaitForChild("Humanoid")
-    
     humanoid.HealthChanged:Connect(function()
         if godmodeEnabled and humanoid.Health < humanoid.MaxHealth then
             humanoid.Health = humanoid.MaxHealth
@@ -74,38 +70,25 @@ local function enableGodmode()
     end)
 end
 
--- GUI Elements
-ESPTab:CreateToggle({
-    Name = "ESP Enabled",
-    CurrentValue = espEnabled,
-    Callback = function(value)
-        espEnabled = value
-    end
-})
+-- Apply ESP to all players
+for _, player in pairs(Players:GetPlayers()) do
+    createESP(player)
+end
 
-ESPTab:CreateToggle({
-    Name = "Friend ESP",
-    CurrentValue = friendESP,
-    Callback = function(value)
-        friendESP = value
-        updateESPColors()
+-- Update loop
+RunService.Heartbeat:Connect(function()
+    for _, player in pairs(Players:GetPlayers()) do
+        createESP(player)
     end
-})
+    if godmodeEnabled then enableGodmode() end
+end)
 
-ESPTab:CreateColorPicker({
-    Name = "Player Color",
-    Callback = function(value)
-        local player = game.Players.LocalPlayer -- replace with selection logic
-        playerColors[player] = value
-        updateESPColors()
-    end
-})
-
-ESPTab:CreateToggle({
-    Name = "Godmode / Unkillable",
-    CurrentValue = godmodeEnabled,
-    Callback = function(value)
-        godmodeEnabled = value
+-- New players
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        createESP(player)
+    end)
+end)        godmodeEnabled = value
         if godmodeEnabled then
             enableGodmode()
         end
