@@ -3,49 +3,51 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- Variables
+-- Table to store highlights
 local espData = {}
-local espEnabled = true
-local friendESP = true
-local godmodeEnabled = false
 
--- Create GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "CustomESP_GUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 180)
-frame.Position = UDim2.new(0, 20, 0, 20)
-frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-frame.BorderSizePixel = 0
-frame.Parent = screenGui
-
-local function createButton(text, pos, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 200, 0, 30)
-    btn.Position = pos
-    btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Parent = frame
-    btn.MouseButton1Click:Connect(callback)
-end
-
--- Buttons
-createButton("Toggle ESP", UDim2.new(0, 10, 0, 10), function() espEnabled = not espEnabled end)
-createButton("Toggle Friend ESP", UDim2.new(0, 10, 0, 50), function() friendESP = not friendESP end)
-createButton("Toggle Godmode", UDim2.new(0, 10, 0, 90), function() godmodeEnabled = not godmodeEnabled end)
-
--- ESP Functions
+-- Function to create/update ESP
 local function createESP(player)
     if player == LocalPlayer then return end
-    local char = player.Character
-    if char then
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp and espEnabled then
+    local character = player.Character
+    if character then
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            -- If no highlight exists, create one
             if not espData[player] then
                 local highlight = Instance.new("Highlight")
-                highlight.Adornee = char
-                highlight.FillColor = friendESP and (LocalPlayer:Is
+                highlight.Adornee = character
+                highlight.FillTransparency = 0.5
+                highlight.Parent = workspace
+                espData[player] = highlight
+            end
+            -- Set color based on friend or not
+            if LocalPlayer:IsFriendsWith(player.UserId) then
+                espData[player].FillColor = Color3.fromRGB(0, 0, 255) -- Blue for friends
+                espData[player].OutlineColor = Color3.fromRGB(0, 0, 255)
+            else
+                espData[player].FillColor = Color3.fromRGB(0, 255, 0) -- Green for others
+                espData[player].OutlineColor = Color3.fromRGB(0, 255, 0)
+            end
+        end
+    end
+end
+
+-- Apply ESP to all players initially
+for _, player in pairs(Players:GetPlayers()) do
+    createESP(player)
+end
+
+-- Update ESP every frame
+RunService.Heartbeat:Connect(function()
+    for _, player in pairs(Players:GetPlayers()) do
+        createESP(player)
+    end
+end)
+
+-- Apply ESP to new players joining
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        createESP(player)
+    end)
+end)
