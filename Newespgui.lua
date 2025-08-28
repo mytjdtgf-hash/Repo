@@ -1,13 +1,20 @@
 -- Load Rayfield UI
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Create Main Window
+-- Create Main Window with Key System
 local Window = Rayfield:CreateWindow({
-    Name = "Enhanced ESP + Godmode",
+    Name = "ESP + Godmode",
     LoadingTitle = "Loading ESP...",
     LoadingSubtitle = "by YourName",
     Theme = "Default",
-    KeySystem = false
+    KeySystem = true,
+    KeySettings = {
+        Title = "ESP Key",
+        Subtitle = "Press M to unlock",
+        Note = "Key is case sensitive",
+        FileName = "ESPKey",
+        Key = {"M"}
+    }
 })
 
 -- Create ESP Tab
@@ -15,6 +22,7 @@ local ESPTab = Window:CreateTab("ESP Settings", 4483362458)
 
 -- Variables
 local espData = {}
+local espEnabled = true
 local friendESP = true
 local playerColors = {}
 local godmodeEnabled = false
@@ -25,7 +33,7 @@ local function createESP(player)
     local character = player.Character
     if character then
         local hrp = character:FindFirstChild("HumanoidRootPart")
-        if hrp then
+        if hrp and espEnabled then
             if not espData[player] then
                 local highlight = Instance.new("Highlight")
                 highlight.Adornee = character
@@ -34,6 +42,9 @@ local function createESP(player)
                 highlight.Parent = workspace
                 espData[player] = highlight
             end
+        elseif espData[player] then
+            espData[player]:Destroy()
+            espData[player] = nil
         end
     end
 end
@@ -56,7 +67,6 @@ local function enableGodmode()
     local character = player.Character or player.CharacterAdded:Wait()
     local humanoid = character:WaitForChild("Humanoid")
     
-    -- Prevents damage
     humanoid.HealthChanged:Connect(function()
         if godmodeEnabled and humanoid.Health < humanoid.MaxHealth then
             humanoid.Health = humanoid.MaxHealth
@@ -65,6 +75,14 @@ local function enableGodmode()
 end
 
 -- GUI Elements
+ESPTab:CreateToggle({
+    Name = "ESP Enabled",
+    CurrentValue = espEnabled,
+    Callback = function(value)
+        espEnabled = value
+    end
+})
+
 ESPTab:CreateToggle({
     Name = "Friend ESP",
     CurrentValue = friendESP,
@@ -99,10 +117,17 @@ for _, player in pairs(game.Players:GetPlayers()) do
     createESP(player)
 end
 
--- Real-time updates
+-- Real-time updates every frame
 game:GetService("RunService").Heartbeat:Connect(function()
     for _, player in pairs(game.Players:GetPlayers()) do
         createESP(player)
     end
     updateESPColors()
+end)
+
+-- Apply ESP to new players joining
+game.Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        createESP(player)
+    end)
 end)
