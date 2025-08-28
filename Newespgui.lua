@@ -1,6 +1,5 @@
 -- Services
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Table to store highlights
@@ -33,15 +32,21 @@ local function createESP(player)
     end
 end
 
--- Apply ESP to all players initially
-for _, player in pairs(Players:GetPlayers()) do
-    createESP(player)
-end
-
--- Update ESP every frame
-RunService.Heartbeat:Connect(function()
+-- Function to refresh ESP for all players
+local function refreshESP()
     for _, player in pairs(Players:GetPlayers()) do
         createESP(player)
+    end
+end
+
+-- Initial ESP
+refreshESP()
+
+-- Refresh ESP every second
+spawn(function()
+    while true do
+        refreshESP()
+        wait(1)
     end
 end)
 
