@@ -10,10 +10,10 @@ local Window = Rayfield:CreateWindow({
     KeySystem = true,
     KeySettings = {
         Title = "ESP Key",
-        Subtitle = "Press M to unlock",
+        Subtitle = "Press MM to unlock",
         Note = "Key is case sensitive",
         FileName = "ESPKey",
-        Key = {"M"}
+        Key = {"MM"}
     }
 })
 
